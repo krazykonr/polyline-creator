@@ -1,33 +1,66 @@
 <script lang="ts">
+	import { onMount } from 'svelte';
 	import { Dropzone } from 'flowbite-svelte';
-	import { fileContent } from '$lib/stores/fileStore';
+	import { fileContent, selectedFile } from '$lib/stores/fileStore';
 
-	let value: FileList | null = $state(null);
+	// Bound to the Dropzone component:
+	let value: FileList | null = null;
 
-	function handleChange(event: Event) {
-		const target = event.target as HTMLInputElement;
-		value = target.files;
+	onMount(() => {
+		console.log('🟢 FileSelectionButton mounted');
+	});
+
+	// Reactive debug: log whenever the bound `value` changes
+	$: console.log('🔄 Dropzone files value:', value);
+
+	// Reactive file‐load: as soon as `value` has a FileList, read it
+	$: if (value && value.length > 0) {
+		const file = value[0];
+		console.log('⚙️  Reactive handler sees file:', file.name);
+		selectedFile.set(file);
+
+		file.text().then((text) => {
+			console.log('📄 Reactive read text length:', text.length);
+			fileContent.set(text);
+		});
+	} else if (value !== null) {
+		// value === [] or null
+		console.log('❌ Reactive handler: no files');
+		selectedFile.set(null);
+		fileContent.set(null);
 	}
 
-	function dropHandle(event: DragEvent) {
+	async function handleChange(event: Event) {
+		// still keep this in case the Dropzone does forward change
+		const target = event.target as HTMLInputElement;
+		const files = target.files;
+		console.log('👆 handleChange files:', files);
+		value = files;
+	}
+
+	async function dropHandle(event: DragEvent) {
 		event.preventDefault();
-		value = event.dataTransfer?.files ?? null;
+		const dtFiles = event.dataTransfer?.files;
+		console.log('👆 dropHandle files:', dtFiles);
+		value = dtFiles ?? null;
 	}
 
 	function showFiles(files: FileList | null): string {
 		if (!files || files.length === 0) return 'No files selected.';
 		return Array.from(files)
-			.map((file) => file.name)
+			.map((f) => f.name)
 			.join(', ');
 	}
 </script>
 
 <Dropzone
 	id="dropzone"
+	class="w-full max-w-2xl"
 	bind:files={value}
-	ondrop={dropHandle}
-	ondragover={(event) => event.preventDefault()}
-	onchange={handleChange}
+	accept=".gpx,.tcx,.fit"
+	on:drop={dropHandle}
+	on:dragover={(e) => e.preventDefault()}
+	on:change={handleChange}
 >
 	<svg
 		aria-hidden="true"
