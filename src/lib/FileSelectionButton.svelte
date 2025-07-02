@@ -2,12 +2,16 @@
 	import { onMount } from 'svelte';
 	import { Dropzone } from 'flowbite-svelte';
 	import { fileContent, selectedFile } from '$lib/stores/fileStore';
+	import { fileInputEl } from '$lib/stores/fileInputStore';
 
 	// Bound to the Dropzone component:
 	let value: FileList | null = null;
 
 	onMount(() => {
 		console.log('🟢 FileSelectionButton mounted');
+		// expose the hidden <input> so other components can .click() it
+		const input = document.querySelector('#dropzone input[type="file"]') as HTMLInputElement | null;
+		if (input) fileInputEl.set(input);
 	});
 
 	// Reactive debug: log whenever the bound `value` changes
@@ -83,7 +87,7 @@
 			<span class="font-semibold">Click to upload</span>
 			or drag and drop
 		</p>
-		<p class="text-xs text-gray-500 dark:text-gray-400">GPX, TCX or FIT (max 6MB)</p>
+		<p class="text-xs text-gray-500 dark:text-gray-400">GPX (max 6MB)</p>
 	{:else}
 		<p class="text-sm text-green-600">{showFiles(value)}</p>
 	{/if}

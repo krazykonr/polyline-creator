@@ -1,35 +1,26 @@
 <script lang="ts">
-	/* External state */
+	import { onMount } from 'svelte';
 	import { fileContent, selectedFile } from '$lib/stores/fileStore';
-
-	/* Utilities & display */
+	import { fileInputEl } from '$lib/stores/fileInputStore';
 	import PolylineSVG from '$lib/PolylineSVG.svelte';
 	import { parseGpxToCoords, type LatLng } from '$lib/utils/polyline';
 
 	/* Flowbite */
-	import { Button, Toggle, Range, Label } from 'flowbite-svelte';
-	import { XSolid } from 'flowbite-svelte-icons';
+	import { Button, Range } from 'flowbite-svelte';
+	import { DownloadSolid, FileSolid } from 'flowbite-svelte-icons';
 
 	/* Colour picker */
-	import ColorPicker from 'svelte-awesome-color-picker';
+	import ColorPicker, { ChromeVariant } from 'svelte-awesome-color-picker';
 
-	/* PNG export helper */
-	import pkg from 'save-svg-as-png';
-	const { saveSvgAsPng } = pkg;
-
-	/*‑‑ State --------------------------------------------------------------*/
+	/* ── state ──────────────────────────────────────────────────────────── */
 	let coords: LatLng[] = [];
 
-	/* line */
 	let strokeColor = '#ff0000';
 	let strokeWidth = 2;
 
-	/* background */
 	let bgColorChoice = '#ffffff';
-	let showBackground = false;
-	$: bgColor = showBackground ? bgColorChoice : 'transparent';
+	$: bgColor = bgColorChoice;
 
-	/* activity title */
 	let activityName: string | null = null;
 
 	/* Whenever the loaded file (text) changes, (1) parse coords, (2) grab name */
@@ -50,73 +41,126 @@
 		}
 	}
 
+	/* PNG helper – imported only in the browser */
+	import type { toPng } from 'html-to-image';
+	let toPngFn: typeof toPng | undefined;
+	onMount(async () => {
+		const mod = await import('html-to-image');
+		toPngFn = mod.toPng;
+		console.log('[Editor] html-to-image loaded ✔︎');
+	});
+
 	function exportPNG() {
-		const svgEl = document.getElementById('polyline-svg') as SVGElement | null;
+		console.log('[Editor] Export PNG clicked');
+		if (!toPngFn) {
+			console.warn('[Editor] saveSvgAsPng not yet initialised');
+			return;
+		}
+		const svgEl = document.getElementById('polyline-svg') as HTMLElement | null;
+		console.log('[Editor] SVG element found?', !!svgEl);
 		if (svgEl) {
-			saveSvgAsPng(svgEl, 'polyline.png', {
+			toPngFn(svgEl, {
 				backgroundColor: bgColor === 'transparent' ? undefined : bgColor
-			});
+			})
+				.then((dataUrl) => {
+					const link = document.createElement('a');
+					link.download = 'polyline.png';
+					link.href = dataUrl;
+					link.click();
+					console.log('[Editor] PNG download triggered');
+				})
+				.catch((err) => console.log('[Editor] PNG download failed', err));
+			console.log('[Editor] saveSvgAsPng invoked');
 		}
 	}
 
-	function removeActivity() {
-		selectedFile.set(null);
-		fileContent.set(null);
+	/* programmatically open the drop-zone file picker */
+	function pickAnotherFile() {
+		console.log('[Editor] Pick another file clicked');
+		let inputEl: HTMLInputElement | null;
+		const unsub = fileInputEl.subscribe((el) => (inputEl = el));
+		unsub();
+		if (inputEl) {
+			inputEl.click();
+			console.log('[Editor] file picker opened');
+		} else {
+			console.warn('[Editor] file input element not in store');
+		}
 	}
 </script>
 
 {#if coords.length > 0}
-	<!--‑‑ EDITOR CONTAINER ----------------------------------------------->
 	<div
-		class="border-primary-500 bg-primary-100 dark:border-secondary-500 dark:bg-primary-800 mx-auto flex max-w-fit flex-col
-		       items-center gap-6 rounded-lg border-4 p-6
-		       shadow-lg"
+		class="from-primary-100 to-secondary-200 border-primary-500 dark:from-primary-700 dark:to-primary-900 dark:border-secondary-500 relative mx-auto
+		       flex max-h-[90vh] w-full flex-col
+		       gap-6 rounded-lg border-4
+		       bg-gradient-to-br p-6 shadow-lg
+		       lg:w-3/4 xl:w-2/3"
 	>
-		<!-- Header: file / activity title + close button -->
-		<div class="flex w-full items-center justify-between gap-4">
-			<h2 class="text-primary-800 dark:text-primary-50 truncate text-lg font-semibold">
+		<!-- header -->
+		<div class="flex w-full items-center justify-between">
+			<h2 class="text-primary-900 dark:text-primary-50 truncate text-lg font-semibold">
 				{activityName ?? $selectedFile?.name}
 			</h2>
 
-			<Button color="failure" size="sm" pill on:click={removeActivity} aria-label="Close">
-				<XSolid class="h-5 w-5" />
+			<!-- new 'pick another file' button -->
+			<Button color="secondary" pill size="sm" on:click={pickAnotherFile}>
+				<FileSolid class="mr-2 h-5 w-5" /> Pick another file
 			</Button>
 		</div>
 
-		<!-- SVG preview -->
-		<PolylineSVG id="polyline-svg" class="mx-auto" {coords} {strokeColor} {strokeWidth} {bgColor} />
+		<!-- two-column desktop layout -->
+		<div class="w-full lg:grid lg:grid-cols-2 lg:gap-8">
+			<!-- SETTINGS CARD -->
+			<div
+				class="dark:border-primary-700 dark:bg-primary-900/30 flex flex-col gap-6 rounded-lg border bg-white/40 p-4"
+			>
+				<!-- line colour -->
+				<div class="flex flex-col items-start gap-3">
+					<label class="text-base font-semibold">Line colour</label>
+					<ColorPicker
+						bind:hex={strokeColor}
+						position="responsive"
+						components={ChromeVariant}
+						sliderDirection="horizontal"
+						label=""
+					/>
+				</div>
 
-		<!-- Controls -->
-		<div class="flex flex-wrap justify-center gap-8">
-			<!-- Line colour -->
-			<div class="flex flex-col items-center gap-2">
-				<Label>Line&nbsp;colour</Label>
-				<ColorPicker bind:hex={strokeColor} position="responsive" isAlpha={false} />
+				<!-- background -->
+				<div class="flex flex-col items-start gap-3">
+					<label class="text-base font-semibold">Background</label>
+					<ColorPicker
+						bind:hex={bgColorChoice}
+						position="responsive"
+						components={ChromeVariant}
+						sliderDirection="horizontal"
+						label=""
+					/>
+				</div>
+
+				<!-- line width -->
+				<div class="flex flex-col items-start gap-3">
+					<label class="text-base font-semibold" for="lineWidthRange">Line width</label>
+					<Range
+						id="lineWidthRange"
+						min={1}
+						max={10}
+						step={1}
+						bind:value={strokeWidth}
+						class="w-full lg:w-32"
+					/>
+				</div>
+
+				<!-- export -->
+				<Button pill color="primary" on:click={exportPNG} class="self-start">
+					<DownloadSolid class="mr-2 h-5 w-5" /> Export PNG
+				</Button>
 			</div>
 
-			<!-- Background colour + toggle -->
-			<div class="flex flex-col items-center gap-2">
-				<Label>Background</Label>
-				<ColorPicker bind:hex={bgColorChoice} position="responsive" isAlpha={false} />
-				<Toggle id="bgToggle" bind:checked={showBackground}>Show</Toggle>
-			</div>
-
-			<!-- Line width slider -->
-			<div class="flex w-48 flex-col items-center gap-2">
-				<Label for="lineWidthRange">Line&nbsp;width</Label>
-				<Range
-					id="lineWidthRange"
-					min={1}
-					max={10}
-					step={1}
-					bind:value={strokeWidth}
-					class="w-full"
-				/>
-			</div>
-
-			<!-- Export button -->
-			<div class="flex items-end">
-				<Button on:click={exportPNG} color="primary">Export&nbsp;PNG</Button>
+			<!-- SVG preview -->
+			<div class="flex items-center justify-center">
+				<PolylineSVG id="polyline-svg" {coords} {strokeColor} {strokeWidth} {bgColor} />
 			</div>
 		</div>
 	</div>

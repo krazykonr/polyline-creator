@@ -1,31 +1,33 @@
 <script lang="ts">
+	import { fly } from 'svelte/transition';
 	import FileSelectButton from '$lib/FileSelectionButton.svelte';
 	import EditorWindow from '$lib/EditorWindow.svelte';
 	import { fileContent } from '$lib/stores/fileStore';
 </script>
 
-<!-- Full‑height container so navbar+footer stay visible and content can centre -->
-<div class="relative flex flex-1 flex-col items-center justify-center gap-6 p-8">
-	<!-- Drop‑zone wrapper -->
+{#if $fileContent === null}
 	<div
-		class="transition-transform duration-700 ease-out"
-		style:transform={$fileContent ? 'translateY(calc(-40vh + 4rem)) skewY(-4deg)' : 'none'}
+		class="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2"
+		in:fly={{ y: -80, duration: 500 }}
+		out:fly={{ y: 80, duration: 500 }}
 	>
 		<FileSelectButton />
 	</div>
-
-	<!-- Editor appears once a file is chosen -->
-	{#if $fileContent !== null}
-		<div class="w-full max-w-4xl" in:fly={{ y: 100, duration: 700 }}>
-			<EditorWindow />
-		</div>
-	{/if}
-</div>
+{:else}
+	<div
+		class="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2"
+		in:fly={{ y: 80, duration: 500 }}
+		out:fly={{ y: -80, duration: 500 }}
+	>
+		<EditorWindow />
+	</div>
+{/if}
 
 <style>
-	/* Make the Flowbite Dropzone wider without touching its component file */
+	/* Drop‑zone: wide and roomy but only as tall as content */
 	:global(#dropzone) {
-		max-width: 48rem; /* 768 px ≈ “4xl” – visibly wider than the old 2xl */
+		max-width: 48rem; /* 4xl */
 		width: 100%;
+		min-height: 16rem; /* ≈ 256 px for nicer target */
 	}
 </style>

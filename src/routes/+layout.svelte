@@ -1,9 +1,8 @@
 <script lang="ts">
 	import '../app.css';
-	import { Navbar, NavBrand } from 'flowbite-svelte';
+	import { Navbar, NavBrand, Footer, FooterBrand, FooterIcon } from 'flowbite-svelte';
 	import { DarkMode } from 'flowbite-svelte';
-	import { Footer, FooterCopyright } from 'flowbite-svelte';
-	import { ArrowUpRightFromSquareSolid } from 'flowbite-svelte-icons';
+	import { ArrowUpRightFromSquareSolid, GithubSolid, InstagramSolid } from 'flowbite-svelte-icons';
 
 	let { children } = $props();
 </script>
@@ -12,28 +11,34 @@
 	<Navbar class="bg-primary-200 dark:bg-primary-800">
 		<NavBrand href="/" class="flex items-center gap-2">
 			<ArrowUpRightFromSquareSolid class="text-primary-500 dark:text-secondary-500 h-6 w-6" />
-			<span
-				class="text-secondary-950 dark:text-primary-50 self-center text-xl font-semibold whitespace-nowrap"
+			<span class="text-secondary-950 dark:text-primary-50 text-xl font-semibold whitespace-nowrap"
 				>Polyline Creator</span
 			>
 		</NavBrand>
 
 		<DarkMode
-			class="border-primary-500 bg-primary-500 text-secondary-500 hover:text-primary-500 hover:text-primary-800 hover:bg-primary-400
-			    dark:border-secondary-500 dark:bg-secondary-500 dark:text-primary-500 hover:dark:text-secondary-500 hover:dark:bg-primary-500"
+			class="border-primary-500 bg-primary-500 text-secondary-500 hover:bg-primary-400
+			    dark:border-secondary-500 dark:bg-secondary-500 dark:text-primary-500 hover:dark:bg-secondary-400"
 		/>
 	</Navbar>
 
-	<main class="flex-1 overflow-auto px-8">
-		{@render children()}
-	</main>
+	<main class="flex-1 overflow-auto px-8">{@render children()}</main>
 
-	<Footer type="socialmedia" class="bg-secondary-600 dark:bg-secondary-700 mt-auto">
-		<FooterCopyright
-			href="/"
-			by="Midday Software Development™"
-			year={2025}
-			class="dark:fill-white"
-		/>
+	<Footer footerType="socialmedia" class="bg-secondary-600 dark:bg-secondary-700 mt-auto">
+		<div class="sm:flex sm:items-center sm:justify-between">
+			<FooterBrand href="https://noons.dev" alt="noons.dev logo" name="noons.dev" />
+			<div class="mt-4 flex space-x-6 sm:mt-0 sm:justify-center rtl:space-x-reverse">
+				<FooterIcon href="https://instagram.com/nooons_">
+					<InstagramSolid
+						class="h-12 w-12 text-gray-500 hover:text-gray-900 dark:text-gray-500 dark:hover:text-white"
+					/>
+				</FooterIcon>
+				<FooterIcon href="https://github.com/krazykonr">
+					<GithubSolid
+						class="h-12 w-12 text-gray-500 hover:text-gray-900 dark:text-gray-500 dark:hover:text-white"
+					/>
+				</FooterIcon>
+			</div>
+		</div>
 	</Footer>
 </div>
