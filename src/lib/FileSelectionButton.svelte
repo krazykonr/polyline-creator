@@ -1,40 +1,57 @@
 <script lang="ts">
-	import { Button } from 'flowbite-svelte';
+	import { Dropzone } from 'flowbite-svelte';
 	import { fileContent } from '$lib/stores/fileStore';
-	import { UploadSolid } from 'flowbite-svelte-icons';
 
-	/** Button caption (default: “Open file”). */
-	export let label: string = 'Open file';
-	/** Accept attribute for the hidden <input>. Example: ".gpx,.csv" */
-	export let accept: string = '*/*';
+	let value: FileList | null = $state(null);
 
-	let fileInput: HTMLInputElement | null = null;
-
-	function openFileDialog() {
-		fileInput?.click();
-		console.log("Clicking upload button")
+	function handleChange(event: Event) {
+		const target = event.target as HTMLInputElement;
+		value = target.files;
 	}
 
-	/** Read the first selected file as plain text and push to the store. */
-	function handleChange(e: Event) {
-		const input = e.target as HTMLInputElement;
-		if (input.files?.[0]) {
-			const reader = new FileReader();
-			reader.onload = () => fileContent.set(reader.result as string);
-			reader.readAsText(input.files[0]);
-		}
+	function dropHandle(event: DragEvent) {
+		event.preventDefault();
+		value = event.dataTransfer?.files ?? null;
+	}
+
+	function showFiles(files: FileList | null): string {
+		if (!files || files.length === 0) return 'No files selected.';
+		return Array.from(files)
+			.map((file) => file.name)
+			.join(', ');
 	}
 </script>
 
-<!-- Hidden native picker -->
-<input
-	type="file"
-	class="hidden"
-	bind:this={fileInput}
-	accept={accept}
-	on:change={handleChange}
-/>
+<Dropzone
+	id="dropzone"
+	bind:files={value}
+	ondrop={dropHandle}
+	ondragover={(event) => event.preventDefault()}
+	onchange={handleChange}
+>
+	<svg
+		aria-hidden="true"
+		class="mb-3 h-10 w-10 text-gray-400"
+		fill="none"
+		stroke="currentColor"
+		viewBox="0 0 24 24"
+		xmlns="http://www.w3.org/2000/svg"
+	>
+		<path
+			stroke-linecap="round"
+			stroke-linejoin="round"
+			stroke-width="2"
+			d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
+		/>
+	</svg>
 
-<label class="inline-flex items-center cursor-pointer">
-    <Button class="items-center p-4 gap-4" size="xl" color="primary" onclick={openFileDialog}>{label} <UploadSolid /></Button>
-</label>
+	{#if !value || value.length === 0}
+		<p class="mb-2 text-sm text-gray-500 dark:text-gray-400">
+			<span class="font-semibold">Click to upload</span>
+			or drag and drop
+		</p>
+		<p class="text-xs text-gray-500 dark:text-gray-400">GPX, TCX or FIT (max 6MB)</p>
+	{:else}
+		<p class="text-sm text-green-600">{showFiles(value)}</p>
+	{/if}
+</Dropzone>
