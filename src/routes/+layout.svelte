@@ -22,9 +22,9 @@
 		/>
 	</Navbar>
 
-	<main class="flex-1 overflow-auto px-8">{@render children()}</main>
+	<main class="flex-1 px-8">{@render children()}</main>
 
-	<Footer footerType="socialmedia" class="bg-secondary-600 dark:bg-secondary-700 z-20 mt-auto">
+	<!-- <Footer footerType="socialmedia" class="bg-secondary-600 dark:bg-secondary-700 z-20 mt-auto">
 		<div class="sm:flex sm:items-center sm:justify-between">
 			<FooterBrand href="https://noons.dev" alt="noons.dev logo" name="noons.dev" />
 			<div class="mt-4 flex space-x-6 sm:mt-0 sm:justify-center rtl:space-x-reverse">
@@ -40,5 +40,5 @@
 				</FooterIcon>
 			</div>
 		</div>
-	</Footer>
+	</Footer> -->
 </div>

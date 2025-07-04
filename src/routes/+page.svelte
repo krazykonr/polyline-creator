@@ -31,7 +31,7 @@
 {:else}
 	<!-- Editor screen -->
 	<div
-		class="fixed inset-0 z-10 flex items-center justify-center p-4"
+		class="fixed inset-0 z-10 flex items-center p-4"
 		in:fly={{ y: 80, duration: 500 }}
 		out:fly={{ y: -80, duration: 500 }}
 	>

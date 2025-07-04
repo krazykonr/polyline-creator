@@ -47,7 +47,7 @@
 		<p class="mb-2 text-sm text-gray-500 dark:text-gray-400">
 			<span class="font-semibold">Click to upload</span> or drag and drop
 		</p>
-		<p class="text-xs text-gray-500 dark:text-gray-400">GPX (max 6MB)</p>
+		<p class="text-xs text-gray-500 dark:text-gray-400">GPX files only</p>
 	{:else}
 		<p class="text-sm text-green-600">{showFiles(value)}</p>
 	{/if}
