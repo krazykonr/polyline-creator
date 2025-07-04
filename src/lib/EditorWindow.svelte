@@ -1,49 +1,42 @@
 <script lang="ts">
-	import { onMount } from 'svelte';
-	import { fileContent, selectedFile } from '$lib/stores/fileStore';
-	import { fileInputEl } from '$lib/stores/fileInputStore';
+	import { onMount, createEventDispatcher } from 'svelte';
 	import PolylineSVG from '$lib/PolylineSVG.svelte';
+	import EditorControls from '$lib/EditorControls.svelte';
 	import { parseGpxToCoords, type LatLng } from '$lib/utils/polyline';
+	import { Button } from 'flowbite-svelte';
+	import type { toPng } from 'html-to-image';
 
-	/* Flowbite */
-	import { Button, Range } from 'flowbite-svelte';
-	import { DownloadSolid, FileSolid } from 'flowbite-svelte-icons';
+	export let selectedFile: File | null;
+	export let fileContent: string | null;
 
-	/* Colour picker */
-	import ColorPicker, { ChromeVariant } from 'svelte-awesome-color-picker';
+	const dispatch = createEventDispatcher();
 
-	/* ── state ──────────────────────────────────────────────────────────── */
 	let coords: LatLng[] = [];
-
 	let strokeColor = '#ff0000';
 	let strokeWidth = 2;
-
-	let bgColorChoice = '#ffffff';
+	let bgColorChoice = '#ffffff00';
 	$: bgColor = bgColorChoice;
 
 	let activityName: string | null = null;
 
-	/* Whenever the loaded file (text) changes, (1) parse coords, (2) grab name */
-	$: if ($fileContent !== null) {
+	$: if (fileContent !== null) {
 		try {
-			coords = parseGpxToCoords($fileContent);
-
-			// Try to extract <name> from GPX
-			const doc = new DOMParser().parseFromString($fileContent, 'application/xml');
+			coords = parseGpxToCoords(fileContent);
+			const doc = new DOMParser().parseFromString(fileContent, 'application/xml');
 			const nameNode =
 				doc.querySelector('trk > name') ??
 				doc.querySelector('metadata > name') ??
 				doc.querySelector('name');
 			activityName = nameNode?.textContent?.trim() || null;
 		} catch {
+			console.warn('[Editor] Failed to parse GPX:', err);
 			coords = [];
 			activityName = null;
 		}
 	}
 
-	/* PNG helper – imported only in the browser */
-	import type { toPng } from 'html-to-image';
 	let toPngFn: typeof toPng | undefined;
+
 	onMount(async () => {
 		const mod = await import('html-to-image');
 		toPngFn = mod.toPng;
@@ -51,41 +44,35 @@
 	});
 
 	function exportPNG() {
-		console.log('[Editor] Export PNG clicked');
-		if (!toPngFn) {
-			console.warn('[Editor] saveSvgAsPng not yet initialised');
-			return;
-		}
-		const svgEl = document.getElementById('polyline-svg') as HTMLElement | null;
-		console.log('[Editor] SVG element found?', !!svgEl);
-		if (svgEl) {
-			toPngFn(svgEl, {
-				backgroundColor: bgColor === 'transparent' ? undefined : bgColor
+		if (!toPngFn) return;
+		const svgEl = document.getElementById('polyline-svg') as SVGElement | null;
+		if (!svgEl) return;
+
+		toPngFn(svgEl, {
+			backgroundColor: bgColor === 'transparent' ? undefined : bgColor
+		})
+			.then((dataUrl) => {
+				const link = document.createElement('a');
+				link.download = 'polyline.png';
+				link.href = dataUrl;
+				link.click();
 			})
-				.then((dataUrl) => {
-					const link = document.createElement('a');
-					link.download = 'polyline.png';
-					link.href = dataUrl;
-					link.click();
-					console.log('[Editor] PNG download triggered');
-				})
-				.catch((err) => console.log('[Editor] PNG download failed', err));
-			console.log('[Editor] saveSvgAsPng invoked');
-		}
+			.catch((err) => console.log('[Editor] PNG download failed', err));
 	}
 
-	/* programmatically open the drop-zone file picker */
-	function pickAnotherFile() {
-		console.log('[Editor] Pick another file clicked');
-		let inputEl: HTMLInputElement | null;
-		const unsub = fileInputEl.subscribe((el) => (inputEl = el));
-		unsub();
-		if (inputEl) {
-			inputEl.click();
-			console.log('[Editor] file picker opened');
-		} else {
-			console.warn('[Editor] file input element not in store');
-		}
+	function exportSVG() {
+		const svgEl = document.getElementById('polyline-svg') as SVGElement | null;
+		if (!svgEl) return;
+
+		const serializer = new XMLSerializer();
+		const svgString = serializer.serializeToString(svgEl);
+		const blob = new Blob([svgString], { type: 'image/svg+xml' });
+		const url = URL.createObjectURL(blob);
+		const link = document.createElement('a');
+		link.download = 'polyline.svg';
+		link.href = url;
+		link.click();
+		URL.revokeObjectURL(url);
 	}
 </script>
 
@@ -100,63 +87,33 @@
 		<!-- header -->
 		<div class="flex w-full items-center justify-between">
 			<h2 class="text-primary-900 dark:text-primary-50 truncate text-lg font-semibold">
-				{activityName ?? $selectedFile?.name}
+				{activityName ?? selectedFile?.name}
 			</h2>
 
-			<!-- new 'pick another file' button -->
-			<Button color="secondary" pill size="sm" on:click={pickAnotherFile}>
-				<FileSolid class="mr-2 h-5 w-5" /> Pick another file
+			<!-- clear button -->
+			<Button
+				color="secondary"
+				pill
+				size="sm"
+				onclick={() => {
+					console.log('[EditorWindow] Dispatching clear event');
+					dispatch('clear');
+				}}
+			>
+				Clear File
 			</Button>
 		</div>
 
 		<!-- two-column desktop layout -->
 		<div class="w-full lg:grid lg:grid-cols-2 lg:gap-8">
-			<!-- SETTINGS CARD -->
-			<div
-				class="dark:border-primary-700 dark:bg-primary-900/30 flex flex-col gap-6 rounded-lg border bg-white/40 p-4"
-			>
-				<!-- line colour -->
-				<div class="flex flex-col items-start gap-3">
-					<label class="text-base font-semibold">Line colour</label>
-					<ColorPicker
-						bind:hex={strokeColor}
-						position="responsive"
-						components={ChromeVariant}
-						sliderDirection="horizontal"
-						label=""
-					/>
-				</div>
-
-				<!-- background -->
-				<div class="flex flex-col items-start gap-3">
-					<label class="text-base font-semibold">Background</label>
-					<ColorPicker
-						bind:hex={bgColorChoice}
-						position="responsive"
-						components={ChromeVariant}
-						sliderDirection="horizontal"
-						label=""
-					/>
-				</div>
-
-				<!-- line width -->
-				<div class="flex flex-col items-start gap-3">
-					<label class="text-base font-semibold" for="lineWidthRange">Line width</label>
-					<Range
-						id="lineWidthRange"
-						min={1}
-						max={10}
-						step={1}
-						bind:value={strokeWidth}
-						class="w-full lg:w-32"
-					/>
-				</div>
-
-				<!-- export -->
-				<Button pill color="primary" on:click={exportPNG} class="self-start">
-					<DownloadSolid class="mr-2 h-5 w-5" /> Export PNG
-				</Button>
-			</div>
+			<!-- Controls -->
+			<EditorControls
+				bind:strokeColor
+				bind:strokeWidth
+				bind:bgColorChoice
+				on:exportPNG={exportPNG}
+				on:exportSVG={exportSVG}
+			/>
 
 			<!-- SVG preview -->
 			<div class="flex items-center justify-center">
@@ -164,6 +121,6 @@
 			</div>
 		</div>
 	</div>
-{:else if $fileContent !== null}
+{:else if fileContent !== null}
 	<p class="text-gray-500">No coordinates found in file.</p>
 {/if}

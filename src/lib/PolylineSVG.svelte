@@ -31,7 +31,7 @@
 	}
 </script>
 
-<svg {id} {width} {height} viewBox={`0 0 ${width} ${height}`}>
+<svg {id} {width} {height} viewBox={`0 0 ${width} ${height}`} xmlns="http://www.w3.org/2000/svg">
 	<rect width="100%" height="100%" fill={bgColor} />
 	<path d={pathStr} fill="none" stroke={strokeColor} stroke-width={strokeWidth} />
 </svg>
