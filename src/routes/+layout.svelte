@@ -24,7 +24,7 @@
 
 	<main class="flex-1 px-8">{@render children()}</main>
 
-	<!-- <Footer footerType="socialmedia" class="bg-secondary-600 dark:bg-secondary-700 z-20 mt-auto">
+	<Footer footerType="socialmedia" class="bg-secondary-600 dark:bg-secondary-700 z-20 mt-auto">
 		<div class="sm:flex sm:items-center sm:justify-between">
 			<FooterBrand href="https://noons.dev" alt="noons.dev logo" name="noons.dev" />
 			<div class="mt-4 flex space-x-6 sm:mt-0 sm:justify-center rtl:space-x-reverse">
@@ -33,12 +33,12 @@
 						class="h-12 w-12 text-gray-500 hover:text-gray-900 dark:text-gray-500 dark:hover:text-white"
 					/>
 				</FooterIcon>
-				<FooterIcon href="https://github.com/krazykonr">
+				<FooterIcon href="https://github.com/krazykonr/polyline-creator">
 					<GithubSolid
 						class="h-12 w-12 text-gray-500 hover:text-gray-900 dark:text-gray-500 dark:hover:text-white"
 					/>
 				</FooterIcon>
 			</div>
 		</div>
-	</Footer> -->
+	</Footer>
 </div>
