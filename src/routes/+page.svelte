@@ -17,7 +17,7 @@
 {#if !selectedFile}
 	<!-- File picker screen -->
 	<div
-		class="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2"
+		class="fixed inset-0 z-10 flex items-center justify-center p-4"
 		in:fly={{ y: -80, duration: 500 }}
 		out:fly={{ y: 80, duration: 500 }}
 	>
@@ -31,7 +31,7 @@
 {:else}
 	<!-- Editor screen -->
 	<div
-		class="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2"
+		class="fixed inset-0 z-10 flex items-center justify-center p-4"
 		in:fly={{ y: 80, duration: 500 }}
 		out:fly={{ y: -80, duration: 500 }}
 	>

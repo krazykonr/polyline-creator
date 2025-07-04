@@ -4,17 +4,14 @@
 
 	const dispatch = createEventDispatcher();
 
-	// This is updated by Dropzone binding when a file is selected
 	let value: FileList | null = null;
 
-	// Reactively handle file selection
 	$: if (value && value.length > 0) {
 		const file = value[0];
 		console.log('📤 Dispatching "select" event with file:', file.name);
 		dispatch('select', file);
 	}
 
-	// Optional: helper to show selected filenames in Dropzone
 	function showFiles(files: FileList | null): string {
 		if (!files || files.length === 0) return 'No files selected.';
 		return Array.from(files)
@@ -25,7 +22,7 @@
 
 <Dropzone
 	id="dropzone"
-	class="w-full"
+	class="w-full max-w-screen-md min-w-[300px] flex-1"
 	bind:files={value}
 	accept=".gpx,.tcx,.fit"
 	ondragover={(e) => e.preventDefault()}
@@ -48,8 +45,7 @@
 
 	{#if !value || value.length === 0}
 		<p class="mb-2 text-sm text-gray-500 dark:text-gray-400">
-			<span class="font-semibold">Click to upload</span>
-			or drag and drop
+			<span class="font-semibold">Click to upload</span> or drag and drop
 		</p>
 		<p class="text-xs text-gray-500 dark:text-gray-400">GPX (max 6MB)</p>
 	{:else}

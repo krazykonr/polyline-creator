@@ -8,7 +8,7 @@
 </script>
 
 <div class="flex min-h-screen flex-col">
-	<Navbar class="bg-primary-200 dark:bg-primary-800">
+	<Navbar class="bg-primary-200 dark:bg-primary-800 z-20">
 		<NavBrand href="/" class="flex items-center gap-2">
 			<ArrowUpRightFromSquareSolid class="text-primary-500 dark:text-secondary-500 h-6 w-6" />
 			<span class="text-secondary-950 dark:text-primary-50 text-xl font-semibold whitespace-nowrap"
@@ -24,7 +24,7 @@
 
 	<main class="flex-1 overflow-auto px-8">{@render children()}</main>
 
-	<Footer footerType="socialmedia" class="bg-secondary-600 dark:bg-secondary-700 mt-auto">
+	<Footer footerType="socialmedia" class="bg-secondary-600 dark:bg-secondary-700 z-20 mt-auto">
 		<div class="sm:flex sm:items-center sm:justify-between">
 			<FooterBrand href="https://noons.dev" alt="noons.dev logo" name="noons.dev" />
 			<div class="mt-4 flex space-x-6 sm:mt-0 sm:justify-center rtl:space-x-reverse">
