@@ -26,7 +26,12 @@
 
 	<Footer footerType="socialmedia" class="bg-secondary-600 dark:bg-secondary-700 z-20 mt-auto">
 		<div class="sm:flex sm:items-center sm:justify-between">
-			<FooterBrand href="https://noons.dev" alt="noons.dev logo" name="noons.dev" />
+			<FooterBrand
+				href="https://noons.dev"
+				alt="noons.dev logo"
+				name="noons.dev"
+				class="text-black dark:text-black"
+			/>
 			<div class="mt-4 flex space-x-6 sm:mt-0 sm:justify-center rtl:space-x-reverse">
 				<FooterIcon href="https://instagram.com/nooons_">
 					<InstagramSolid
