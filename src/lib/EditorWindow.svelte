@@ -44,56 +44,97 @@
 		console.log('[Editor] html-to-image loaded ✔︎');
 	});
 
-	function handleExport() {
-		if (exportMode === 'png') {
-			exportPNG();
-		} else {
-			exportSVG();
-		}
-	}
-
-	async function exportPNG() {
-		if (!toPngFn) return;
-
+	async function exportImage(format: 'png' | 'svg') {
 		const svgEl = document.getElementById('polyline-svg') as SVGElement | null;
 		if (!svgEl) return;
 
 		try {
-			const dataUrl = await toPngFn(svgEl, {
-				backgroundColor: bgColor === '#ffffff00' ? undefined : bgColor
-			});
+			let blob: Blob;
+			let extension = format;
+			let mimeType = format === 'svg' ? 'image/svg+xml' : 'image/png';
 
-			// Create download link
-			const link = document.createElement('a');
-			link.download = 'polyline.png';
-			link.href = dataUrl;
-			link.click();
-		} catch (err) {
-			console.error('[Editor] PNG export failed', err);
-		}
-	}
+			if (format === 'png') {
+				if (!toPngFn) {
+					console.error('[Editor] PNG export failed: toPngFn not loaded');
+					return;
+				}
 
-	async function exportSVG() {
-		const svgEl = document.getElementById('polyline-svg') as SVGElement | null;
-		if (!svgEl) return;
+				const dataUrl = await toPngFn(svgEl, {
+					backgroundColor: bgColor === '#ffffff00' ? undefined : bgColor
+				});
 
-		try {
-			const serializer = new XMLSerializer();
-			const svgString = serializer.serializeToString(svgEl);
-			const blob = new Blob([svgString], { type: 'image/svg+xml' });
+				// Convert data URL to blob correctly
+				const byteString = atob(dataUrl.split(',')[1]);
+				const mimeString = dataUrl.split(',')[0].split(':')[1].split(';')[0];
 
-			// Create download link
+				const ab = new ArrayBuffer(byteString.length);
+				const ia = new Uint8Array(ab);
+				for (let i = 0; i < byteString.length; i++) {
+					ia[i] = byteString.charCodeAt(i);
+				}
+				blob = new Blob([ab], { type: mimeString });
+			} else {
+				const serializer = new XMLSerializer();
+				const svgString = serializer.serializeToString(svgEl);
+				blob = new Blob([svgString], { type: mimeType });
+			}
+
+			// Generate filename
+			const filename = activityName
+				? `${activityName.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.${extension}`
+				: `polyline.${extension}`;
+
+			// Try to use File System Access API first (gives user control over save location)
+			if ('showSaveFilePicker' in window) {
+				try {
+					const handle = await window.showSaveFilePicker({
+						suggestedName: filename,
+						types: [
+							{
+								description: `${format.toUpperCase()} Image`,
+								accept: { [mimeType]: [`.${extension}`] }
+							}
+						]
+					});
+
+					const writable = await handle.createWritable();
+					await writable.write(blob);
+					await writable.close();
+
+					console.log(
+						`[Editor] ${format.toUpperCase()} export successful (File System Access API)`
+					);
+					return;
+				} catch (err) {
+					// User cancelled or API not supported, fall through to download method
+					if (err.name !== 'AbortError') {
+						console.warn('[Editor] File System Access API failed, falling back to download:', err);
+					}
+				}
+			}
+
+			// Fallback to traditional download
 			const url = URL.createObjectURL(blob);
 			const link = document.createElement('a');
-			link.download = 'polyline.svg';
 			link.href = url;
+			link.download = filename;
+			document.body.appendChild(link);
 			link.click();
+			document.body.removeChild(link);
 
-			// Clean up
-			URL.revokeObjectURL(url);
+			// Clean up the URL after a short delay
+			setTimeout(() => URL.revokeObjectURL(url), 100);
+
+			console.log(`[Editor] ${format.toUpperCase()} export successful (download method)`);
 		} catch (err) {
-			console.error('[Editor] SVG export failed', err);
+			console.error(`[Editor] ${format.toUpperCase()} export failed`, err);
+			// Optionally show user-friendly error
+			alert(`Failed to export ${format.toUpperCase()} file. Please try again.`);
 		}
+	}
+
+	function handleExport() {
+		exportImage(exportMode);
 	}
 
 	// Window dimensions
