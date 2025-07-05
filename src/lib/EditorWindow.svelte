@@ -112,20 +112,6 @@
 					}
 				}
 			}
-
-			// Fallback to traditional download
-			const url = URL.createObjectURL(blob);
-			const link = document.createElement('a');
-			link.href = url;
-			link.download = filename;
-			document.body.appendChild(link);
-			link.click();
-			document.body.removeChild(link);
-
-			// Clean up the URL after a short delay
-			setTimeout(() => URL.revokeObjectURL(url), 100);
-
-			console.log(`[Editor] ${format.toUpperCase()} export successful (download method)`);
 		} catch (err) {
 			console.error(`[Editor] ${format.toUpperCase()} export failed`, err);
 			// Optionally show user-friendly error
