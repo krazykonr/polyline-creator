@@ -53,6 +53,7 @@
 			let extension = format;
 			let mimeType = format === 'svg' ? 'image/svg+xml' : 'image/png';
 
+			// Create the blob
 			if (format === 'png') {
 				if (!toPngFn) {
 					console.error('[Editor] PNG export failed: toPngFn not loaded');
@@ -63,32 +64,37 @@
 					backgroundColor: bgColor === '#ffffff00' ? undefined : bgColor
 				});
 
-				// Convert data URL to blob correctly
-				const byteString = atob(dataUrl.split(',')[1]);
-				const mimeString = dataUrl.split(',')[0].split(':')[1].split(';')[0];
-
-				const ab = new ArrayBuffer(byteString.length);
-				const ia = new Uint8Array(ab);
-				for (let i = 0; i < byteString.length; i++) {
-					ia[i] = byteString.charCodeAt(i);
-				}
-				blob = new Blob([ab], { type: mimeString });
+				// Convert data URL to blob
+				const response = await fetch(dataUrl);
+				blob = await response.blob();
 			} else {
 				const serializer = new XMLSerializer();
 				const svgString = serializer.serializeToString(svgEl);
 				blob = new Blob([svgString], { type: mimeType });
 			}
 
-			// Generate filename
-			const filename = activityName
-				? `${activityName.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.${extension}`
-				: `polyline.${extension}`;
+			// Generate filename based on the uploaded GPX file
+			let filename: string;
+			if (selectedFile?.name) {
+				// Remove .gpx extension and add the new extension
+				const nameWithoutExtension = selectedFile.name.replace(/\.gpx$/i, '');
+				filename = `${nameWithoutExtension}.${extension}`;
+			} else {
+				// Fallback to activity name or default
+				const baseName = activityName
+					? activityName.replace(/[^a-z0-9]/gi, '_').toLowerCase()
+					: 'polyline';
+				filename = `${baseName}.${extension}`;
+			}
 
-			// Try to use File System Access API first (gives user control over save location)
+			console.log(`[Editor] Exporting as: ${filename}`);
+
+			// Method 1: Try File System Access API first (Chrome/Edge)
 			if ('showSaveFilePicker' in window) {
 				try {
 					const handle = await window.showSaveFilePicker({
 						suggestedName: filename,
+						startIn: 'downloads',
 						types: [
 							{
 								description: `${format.toUpperCase()} Image`,
@@ -101,20 +107,38 @@
 					await writable.write(blob);
 					await writable.close();
 
-					console.log(
-						`[Editor] ${format.toUpperCase()} export successful (File System Access API)`
-					);
+					console.log('[Editor] Export successful using File System Access API');
 					return;
 				} catch (err) {
-					// User cancelled or API not supported, fall through to download method
-					if (err.name !== 'AbortError') {
-						console.warn('[Editor] File System Access API failed, falling back to download:', err);
+					// If user cancelled, don't fall back to download
+					if (err.name === 'AbortError') {
+						console.log('[Editor] User cancelled save dialog');
+						return;
 					}
+					// For other errors, fall back to standard download
+					console.warn('[Editor] File System Access API failed, using standard download:', err);
 				}
 			}
+
+			// Method 2: Standard download (Safari/Firefox/fallback)
+			const url = URL.createObjectURL(blob);
+			const link = document.createElement('a');
+			link.href = url;
+			link.download = filename;
+
+			// Ensure link is hidden
+			link.style.display = 'none';
+
+			document.body.appendChild(link);
+			link.click();
+			document.body.removeChild(link);
+
+			// Clean up the URL after a short delay
+			setTimeout(() => URL.revokeObjectURL(url), 100);
+
+			console.log('[Editor] Export successful using standard download');
 		} catch (err) {
-			console.error(`[Editor] ${format.toUpperCase()} export failed`, err);
-			// Optionally show user-friendly error
+			console.error(`[Editor] ${format.toUpperCase()} export failed:`, err);
 			alert(`Failed to export ${format.toUpperCase()} file. Please try again.`);
 		}
 	}
